@@ -1,0 +1,113 @@
+*===============================================================================
+* Project 2: Postsecondary Certificate Trends
+* File: 01_build_completions_2022.do
+* Purpose: Build clean 2022 institution x CIP2 x AWLEVEL panel from IPEDS
+* Author: Feda Mohammadi
+* Date: July 2026
+*===============================================================================
+
+clear all
+set more off
+
+*-------------------------------------------------------------------------------
+* Setup
+*-------------------------------------------------------------------------------
+global root   "C:\Users\mohammadif\Documents\certificate_trends"
+global raw    "$root\data\raw"
+global clean  "$root\data\clean"
+
+*-------------------------------------------------------------------------------
+* Step 1: Institution directory (HD2022)
+* Keep only what we need: UNITID, name, state, CONTROL, ICLEVEL
+*-------------------------------------------------------------------------------
+import delimited "$raw\hd2022_data_stata.csv", clear varnames(1)
+
+keep unitid instnm stabbr control iclevel
+
+* Label CONTROL and ICLEVEL for readability
+label define control_lbl 1 "Public" 2 "Private nonprofit" 3 "Private for-profit" -3 "Not applicable"
+label values control control_lbl
+
+label define iclevel_lbl 1 "4-year" 2 "2-year" 3 "Less than 2-year" -3 "Not applicable"
+label values iclevel iclevel_lbl
+
+* Sanity check: institution grid
+tab control iclevel, missing
+
+save "$clean\hd2022_trimmed.dta", replace
+
+*-------------------------------------------------------------------------------
+* Step 2: Completions (C2022_A)
+*-------------------------------------------------------------------------------
+import delimited "$raw\c2022_a_data_stata.csv", clear varnames(1) stringcols(2)
+
+keep unitid cipcode majornum awlevel ctotalt
+
+* IMPORTANT: CIPCODE is stored as a fixed-width string. The summary row "99"
+* is padded with trailing spaces to fill 6 characters ("99    "), so a direct
+* string comparison to "99" would fail silently. strtrim removes the padding
+* so the drop below actually catches the summary rows.
+replace cipcode = strtrim(cipcode)
+
+* First majors only. Second majors would double-count students with double majors.
+keep if majornum == 1
+
+* Drop institutional summary rows (CIPCODE "99" = grand total in IPEDS)
+drop if cipcode == "99"
+
+* Build 2-digit CIP as a string to preserve "01", "03", "09"
+gen cip2 = substr(cipcode, 1, 2)
+
+*-------------------------------------------------------------------------------
+* Step 3: Collapse to (UNITID x CIP2 x AWLEVEL) and add year
+*-------------------------------------------------------------------------------
+collapse (sum) ctotalt, by(unitid cip2 awlevel)
+gen year = 2022
+
+*-------------------------------------------------------------------------------
+* Step 4: Merge institution attributes
+*-------------------------------------------------------------------------------
+merge m:1 unitid using "$clean\hd2022_trimmed.dta", keep(match master) nogen
+
+*-------------------------------------------------------------------------------
+* Step 5: Tag award categories (verified against IPEDS 2022 dictionary)
+*   Certificate <1 year:        AWLEVEL 20, 21
+*   Certificate 1 to <2 years:  AWLEVEL 2
+*   Certificate 2 to <4 years:  AWLEVEL 4
+*   Postbaccalaureate cert:     AWLEVEL 6
+*   Post-master's cert:         AWLEVEL 8
+*   Associate:                  AWLEVEL 3
+*   Bachelor:                   AWLEVEL 5
+*   Master:                     AWLEVEL 7
+*   Doctorate:                  AWLEVEL 17, 18, 19
+*-------------------------------------------------------------------------------
+gen award_category = ""
+replace award_category = "cert_under_1yr"     if inlist(awlevel, 20, 21)
+replace award_category = "cert_1_to_2yr"      if awlevel == 2
+replace award_category = "cert_2_to_4yr"      if awlevel == 4
+replace award_category = "cert_postbacc"      if awlevel == 6
+replace award_category = "cert_postmasters"   if awlevel == 8
+replace award_category = "associate"          if awlevel == 3
+replace award_category = "bachelor"           if awlevel == 5
+replace award_category = "master"             if awlevel == 7
+replace award_category = "doctorate"          if inlist(awlevel, 17, 18, 19)
+
+* Every row must get a category. If assert fails, an unknown AWLEVEL slipped in.
+assert award_category != ""
+
+* Broader flag: is this a certificate (any level) or a degree?
+gen is_certificate = inlist(awlevel, 2, 4, 6, 8, 20, 21)
+
+*-------------------------------------------------------------------------------
+* Step 6: Save final 2022 panel
+*-------------------------------------------------------------------------------
+order year unitid instnm stabbr control iclevel cip2 awlevel award_category is_certificate ctotalt
+sort unitid cip2 awlevel
+
+save "$clean\completions_2022.dta", replace
+
+*-------------------------------------------------------------------------------
+* Step 7: Sanity check totals for NCES benchmarking
+*-------------------------------------------------------------------------------
+table award_category, statistic(sum ctotalt)
+table is_certificate, statistic(sum ctotalt)
