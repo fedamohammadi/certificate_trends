@@ -2,3 +2,19 @@
 .Rhistory
 .RData
 .Ruserdata
+
+
+
+# Stata
+*.smcl
+*.log
+*.dta.bak
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+
+# OS
+.DS_Store
+Thumbs.db
