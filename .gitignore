@@ -8,16 +8,11 @@
 *.log
 *.dta.bak
 
-# R
-.Rhistory
-.RData
-.Rproj.user/
-
 # OS
 .DS_Store
 Thumbs.db
 
-# Data files (rebuildable from raw + code)
+# Data
 data/clean/*.dta
 data/clean/by_year/*.dta
 data/raw/ipeds/*.csv
