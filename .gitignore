@@ -1,9 +1,7 @@
-.Rproj.user
+.Rproj.user/
 .Rhistory
 .RData
 .Ruserdata
-
-
 
 # Stata
 *.smcl
@@ -17,6 +15,9 @@
 
 # OS
 .DS_Store
-Thumbs.dbdata/clean/*.dta
+Thumbs.db
+
+# Data files (rebuildable from raw + code)
+data/clean/*.dta
 data/clean/by_year/*.dta
-.Rproj.user/
+data/raw/ipeds/*.csv
