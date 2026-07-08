@@ -19,3 +19,4 @@
 .DS_Store
 Thumbs.dbdata/clean/*.dta
 data/clean/by_year/*.dta
+.Rproj.user/
