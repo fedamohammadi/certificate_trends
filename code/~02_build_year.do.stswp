@@ -27,9 +27,17 @@ save `hd_year'
 
 *-------------------------------------------------------------------------------
 * Step 2: C_A file (completions)
+* Variable naming changed around 2011. Handle both.
 *-------------------------------------------------------------------------------
 import delimited "$raw\ipeds\c`yr'_a_data_stata.csv", clear varnames(1) stringcols(2)
 rename *, lower
+
+* Build ctotalt if it doesn't exist (older files use crace15 + crace16)
+capture confirm variable ctotalt
+if _rc != 0 {
+    display "  Note: `yr' uses old CRACE format. Building ctotalt = crace15 + crace16."
+    gen ctotalt = crace15 + crace16
+}
 
 * MAJORNUM check: exists 2001+, missing in 2000
 capture confirm variable majornum
@@ -42,24 +50,24 @@ else {
     keep unitid cipcode awlevel ctotalt
 }
 
+
 *-------------------------------------------------------------------------------
 * Step 3: Clean CIPCODE
 * Format varies across years:
-*   - 2000-2010ish: "1.0101" (has decimal, no leading zero on 2-digit part)
+*   - 2000-2010ish: "1.0101" (decimal, no leading zero)
 *   - 2011ish-2024: "010101" (no decimal, leading zero)
-* Normalize everything to 6-digit no-decimal string with leading zeros.
+* Normalize to 6-digit no-decimal string, THEN drop summary rows.
 *-------------------------------------------------------------------------------
 replace cipcode = strtrim(cipcode)
 
-* Drop summary rows (both formats: "99" modern, "99.0000" old)
-drop if cipcode == "99" | cipcode == "99.0000"
-
-* Remove decimal if present (converts "1.0101" -> "10101")
+* Remove decimal if present ("1.0101" -> "10101")
 replace cipcode = subinstr(cipcode, ".", "", .)
 
-* Pad with leading zeros to reach 6 characters
-* (e.g. "10101" -> "010101", "1000" -> "001000")
+* Pad with leading zeros to 6 characters ("10101" -> "010101")
 replace cipcode = string(real(cipcode), "%06.0f")
+
+* Now drop summary rows in the normalized format
+drop if cipcode == "990000"
 
 * Build 2-digit CIP
 gen cip2 = substr(cipcode, 1, 2)
@@ -105,3 +113,6 @@ sort unitid cip2 awlevel
 
 save "$clean\by_year\completions_`yr'.dta", replace
 display "  Saved: completions_`yr'.dta with `=_N' rows"
+
+
+
