@@ -1,7 +1,7 @@
 *===============================================================================
 * Project 2: Postsecondary Certificate Trends
 * File: 02_build_panel.do
-* Purpose: Build clean 2000-2024 IPEDS completions panel in ONE file
+* Purpose: Build clean 2000-2024 IPEDS completions panel in one place
 * Author:  Feda Mohammadi
 *===============================================================================
 
@@ -18,7 +18,6 @@ global clean  "$root\data\clean"
 
 capture mkdir "$clean\by_year"
 
-* Delete any old year files from previous broken runs
 cd "$clean\by_year"
 local oldfiles : dir . files "completions_*.dta"
 foreach f of local oldfiles {
@@ -43,29 +42,29 @@ forvalues yr = 2000/2024 {
 
     *---------------------------------------------------------------------------
     * Step 2: Completions file
+    * Import everything as string first, then destring the numerics we need.
+    * This handles all the variable-typing quirks across years in one shot.
     *---------------------------------------------------------------------------
-    import delimited "$raw\ipeds\c`yr'_a_data_stata.csv", clear varnames(1) stringcols(2)
+    import delimited "$raw\ipeds\c`yr'_a_data_stata.csv", clear varnames(1) stringcols(_all)
     rename *, lower
 
-    * Older files use crace15 + crace16 instead of ctotalt
+    * Build ctotalt if missing (older files use crace15 + crace16)
     capture confirm variable ctotalt
     if _rc != 0 {
+        destring crace15 crace16, replace force
         gen ctotalt = crace15 + crace16
     }
-
-    * Older files may store majornum/awlevel as strings
-    capture confirm numeric variable awlevel
-    if _rc != 0 {
-        destring awlevel, replace force
+    else {
+        destring ctotalt, replace force
     }
+
+    * Destring awlevel
+    destring awlevel, replace force
 
     * MAJORNUM filter (variable exists 2001+, missing in 2000)
     capture confirm variable majornum
     if _rc == 0 {
-        capture confirm numeric variable majornum
-        if _rc != 0 {
-            destring majornum, replace force
-        }
+        destring majornum, replace force
         keep unitid cipcode majornum awlevel ctotalt
         keep if majornum == 1
         drop majornum
@@ -74,22 +73,29 @@ forvalues yr = 2000/2024 {
         keep unitid cipcode awlevel ctotalt
     }
 
-    *---------------------------------------------------------------------------
-    * Step 3: Clean CIPCODE
-    *---------------------------------------------------------------------------
-    replace cipcode = strtrim(cipcode)
-    replace cipcode = subinstr(cipcode, ".", "", .)
-    replace cipcode = string(real(cipcode), "%06.0f")
+   *---------------------------------------------------------------------------
+* Step 3: Clean CIPCODE
+*---------------------------------------------------------------------------
+replace cipcode = strtrim(cipcode)
 
-    * Drop institutional summary rows
-    drop if cipcode == "990000"
+* Drop institutional summary rows FIRST, in whatever format they arrive
+* Handles: "99", "99.0000", "990000", "99.0"
+drop if cipcode == "99" | cipcode == "99.0000" | cipcode == "990000" | cipcode == "99.0"
 
-    * Build 2-digit CIP
-    gen cip2 = substr(cipcode, 1, 2)
+* Now normalize the remaining CIP codes
+replace cipcode = subinstr(cipcode, ".", "", .)
+replace cipcode = string(real(cipcode), "%06.0f")
+
+* Build 2-digit CIP
+gen cip2 = substr(cipcode, 1, 2)
+
+* Safety net: drop any cip2 == "99" that survived
+drop if cip2 == "99"
 
     *---------------------------------------------------------------------------
     * Step 4: Collapse to (UNITID x CIP2 x AWLEVEL)
     *---------------------------------------------------------------------------
+    destring unitid, replace force
     collapse (sum) ctotalt, by(unitid cip2 awlevel)
     gen year = `yr'
 
@@ -127,7 +133,7 @@ forvalues yr = 2000/2024 {
 }
 
 *-------------------------------------------------------------------------------
-* Stack all years into one panel
+* Stack all years
 *-------------------------------------------------------------------------------
 display _newline "########## Stacking all years ##########"
 
