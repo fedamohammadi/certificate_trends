@@ -17,4 +17,5 @@
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.dbdata/clean/*.dta
+data/clean/by_year/*.dta
