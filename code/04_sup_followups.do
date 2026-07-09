@@ -1,0 +1,147 @@
+*===============================================================================
+* Project 2: Postsecondary Certificate Trends
+* File: 04_darolia_followups.do
+* Purpose: Address Darolia's follow-up requests:
+*   1. Under-1-year certificates broken by length (codes 20 vs 21), 2011+
+*   2. CIP harmonization check across time (document which 2-digit codes shift)
+*   3. Distribution of 2-digit CIPs for UG certificates, 2015/2019/2024
+* Author:  Feda Mohammadi
+*===============================================================================
+
+clear all
+set more off
+
+*-------------------------------------------------------------------------------
+* Setup
+*-------------------------------------------------------------------------------
+global root    "C:\Users\mohammadif\Documents\certificate_trends"
+global clean   "$root\data\clean"
+global tables  "$root\output\tables"
+global figs    "$root\output\figures"
+
+use "$clean\completions_panel_2000_2024.dta", clear
+
+*===============================================================================
+* Task 1: Under-1-year certificates broken by length
+* AWLEVEL 20 = under 12 weeks (2011+)
+* AWLEVEL 21 = 12 weeks to under 1 year (2011+)
+* AWLEVEL 1  = old code for under 1 year, single bucket (2000-2010)
+*===============================================================================
+preserve
+keep if inlist(awlevel, 1, 20, 21)
+
+gen sub_category = ""
+replace sub_category = "under_1yr_old"   if awlevel == 1
+replace sub_category = "under_12_wk"     if awlevel == 20
+replace sub_category = "wk12_to_1yr"     if awlevel == 21
+
+collapse (sum) ctotalt, by(year sub_category)
+reshape wide ctotalt, i(year) j(sub_category) string
+rename ctotalt* *
+
+order year under_1yr_old under_12_wk wk12_to_1yr
+
+export delimited using "$tables\t4_under1yr_by_length.csv", replace
+list, sepby(year)
+restore
+
+*-------------------------------------------------------------------------------
+* Figure 5: Under-1-year certificates by length, 2011-2024
+*-------------------------------------------------------------------------------
+preserve
+keep if inlist(awlevel, 20, 21)
+keep if year >= 2011
+
+collapse (sum) ctotalt, by(year awlevel)
+reshape wide ctotalt, i(year) j(awlevel)
+
+twoway ///
+    (line ctotalt20 year, lcolor(navy) lwidth(medthick)) ///
+    (line ctotalt21 year, lcolor(maroon) lwidth(medthick)), ///
+    ytitle("Certificates awarded") ///
+    xtitle("Year") ///
+    xlabel(2011(2)2024) ///
+    ylabel(, format(%9.0fc)) ///
+    title("Under-1-year certificates by length, 2020-2024") ///
+    legend(order(1 "Under 12 weeks" 2 "12 weeks to 1 year") ///
+           position(6) rows(1)) ///
+    graphregion(color(white))
+
+graph export "$figs\f5_under1yr_by_length.png", replace width(1600)
+restore
+
+*===============================================================================
+* Task 2: CIP harmonization check
+* Show which 2-digit codes appear in which years to flag revision effects.
+* CIP revisions happened in 2000, 2010, 2020 (introduced in the following year).
+*===============================================================================
+preserve
+collapse (sum) ctotalt, by(year cip2)
+
+* Flag whether a 2-digit code has any awards in each year
+gen has_awards = ctotalt > 0
+
+* Reshape wide to see presence/absence pattern
+keep year cip2 has_awards
+reshape wide has_awards, i(cip2) j(year)
+
+* Sort by pattern of availability
+egen n_years_present = rowtotal(has_awards*)
+sort n_years_present cip2
+
+export delimited using "$tables\t5_cip_stability.csv", replace
+restore
+
+* Second version: totals by cip2 x year, so we can see magnitude shifts
+preserve
+collapse (sum) ctotalt, by(year cip2)
+reshape wide ctotalt, i(cip2) j(year)
+export delimited using "$tables\t5b_cip_totals_by_year.csv", replace
+restore
+
+*===============================================================================
+* Task 3: 2-digit CIP distribution for UG certificates, 2015 / 2019 / 2024
+* UG certificates = AWLEVEL 1, 2, 4, 20, 21 (sub-baccalaureate)
+* Excludes postbaccalaureate (6) and post-master's (8)
+*===============================================================================
+preserve
+keep if inlist(awlevel, 1, 2, 4, 20, 21)
+keep if inlist(year, 2015, 2019, 2024)
+
+collapse (sum) ctotalt, by(year cip2)
+
+* Compute share of UG certificates each year
+bysort year: egen year_total = total(ctotalt)
+gen share = (ctotalt / year_total) * 100
+
+* Rank within year
+gsort year -ctotalt
+by year: gen rank = _n
+
+* Keep sensible ranks so table is readable
+* Full distribution first
+export delimited using "$tables\t6_ug_cert_cip_distribution_full.csv", replace
+
+* Top 15 per year in a wide format for readability
+keep if rank <= 15
+keep year cip2 ctotalt share rank
+
+* Format for the memo
+sort year rank
+list, sepby(year) noobs
+export delimited using "$tables\t6_ug_cert_cip_top15.csv", replace
+restore
+
+*===============================================================================
+* Diagnostics printed to screen
+*===============================================================================
+display _newline "########## Summary of outputs ##########"
+display "t4: Under-1-year certificates by length (all years)"
+display "f5: Under-1-year by length figure (2011-2024)"
+display "t5: CIP 2-digit stability check (which codes appear when)"
+display "t5b: Full totals by cip2 and year"
+display "t6 (full): UG cert CIP distribution 2015/2019/2024"
+display "t6 (top15): Top 15 CIP fields per year for UG certs"
+
+
+
