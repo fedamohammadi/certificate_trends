@@ -15,4 +15,4 @@ Thumbs.db
 # Data
 data/clean/*.dta
 data/clean/by_year/*.dta
-data/raw/ipeds/*.csv
+data/raw/ipeds/*.csvRproj.usre/
