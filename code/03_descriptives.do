@@ -1,8 +1,9 @@
 *===============================================================================
 * Project 2: Postsecondary Certificate Trends
 * File: 03_descriptives.do
-* Purpose: Descriptive tables and figures from the 2000-2024 panel
+* Purpose: Full descriptive package: 5 tables + 5 figures
 * Author:  Feda Mohammadi
+* Date:    July 10 2026
 *===============================================================================
 
 clear all
@@ -22,26 +23,102 @@ capture mkdir "$figs"
 use "$clean\completions_panel_2000_2024.dta", clear
 
 *===============================================================================
-* Table 1: National totals by award category and year
+* TABLE 1: National totals by year and award category
 *===============================================================================
 preserve
 collapse (sum) ctotalt, by(year award_category)
 reshape wide ctotalt, i(year) j(award_category) string
-order year ctotaltcert_under_1yr ctotaltcert_1_to_2yr ctotaltcert_2_to_4yr ///
-      ctotaltcert_postbacc ctotaltcert_postmasters ///
-      ctotaltassociate ctotaltbachelor ctotaltmaster ctotaltdoctorate
-
 rename ctotalt* *
+
+order year cert_under_1yr cert_1_to_2yr cert_2_to_4yr ///
+      cert_postbacc cert_postmasters ///
+      associate bachelor master doctorate
+
 export delimited using "$tables\t1_totals_by_year_category.csv", replace
 restore
 
 *===============================================================================
-* Figure 1: Certificate totals over time (5 lines, one per certificate category)
+* TABLE 2: Under-1-year certificates split by length
+* AWLEVEL 20 = under 12 weeks (2020+)
+* AWLEVEL 21 = 12 weeks to under 1 year (2020+)
+* AWLEVEL 1  = old single bucket (2000-2019)
+*===============================================================================
+preserve
+keep if inlist(awlevel, 1, 20, 21)
+
+gen sub_category = ""
+replace sub_category = "under_1yr_old"   if awlevel == 1
+replace sub_category = "under_12_wk"     if awlevel == 20
+replace sub_category = "wk12_to_1yr"     if awlevel == 21
+
+collapse (sum) ctotalt, by(year sub_category)
+reshape wide ctotalt, i(year) j(sub_category) string
+rename ctotalt* *
+
+order year under_1yr_old under_12_wk wk12_to_1yr
+
+export delimited using "$tables\t2_under1yr_by_length.csv", replace
+restore
+
+*===============================================================================
+* TABLE 3: Certificates by institution CONTROL x ICLEVEL, selected years
+*===============================================================================
+preserve
+keep if is_certificate == 1
+keep if inlist(year, 2000, 2010, 2019, 2024)
+keep if inlist(control, 1, 2, 3)
+keep if inlist(iclevel, 1, 2, 3)
+
+collapse (sum) ctotalt, by(year control iclevel)
+export delimited using "$tables\t3_certs_by_institution_type.csv", replace
+restore
+
+*===============================================================================
+* TABLE 4: Top 15 CIP fields for UG certificates, 2015 / 2019 / 2024
+* UG certificates = AWLEVEL 1, 2, 4, 20, 21 (sub-baccalaureate)
+*===============================================================================
+preserve
+keep if inlist(awlevel, 1, 2, 4, 20, 21)
+keep if inlist(year, 2015, 2019, 2024)
+
+collapse (sum) ctotalt, by(year cip2)
+
+bysort year: egen year_total = total(ctotalt)
+gen share = (ctotalt / year_total) * 100
+
+gsort year -ctotalt
+by year: gen rank = _n
+
+keep if rank <= 15
+keep year cip2 ctotalt share rank
+sort year rank
+
+export delimited using "$tables\t4_ug_cert_cip_top15.csv", replace
+restore
+
+*===============================================================================
+* TABLE 5: CIP 2-digit stability check (binary yes/no)
+* 1 = code has at least one award in that year, 0 = absent
+*===============================================================================
+preserve
+collapse (sum) ctotalt, by(year cip2)
+gen has_awards = ctotalt > 0
+
+keep year cip2 has_awards
+reshape wide has_awards, i(cip2) j(year)
+
+egen n_years_present = rowtotal(has_awards*)
+sort n_years_present cip2
+
+export delimited using "$tables\t5_cip_stability.csv", replace
+restore
+
+*===============================================================================
+* FIGURE 1: Certificate awards by type, 2000-2024
 *===============================================================================
 preserve
 keep if is_certificate == 1
 collapse (sum) ctotalt, by(year award_category)
-
 reshape wide ctotalt, i(year) j(award_category) string
 
 twoway ///
@@ -64,12 +141,11 @@ graph export "$figs\f1_certs_by_type.png", replace width(1600)
 restore
 
 *===============================================================================
-* Figure 2: Certificates vs degrees, indexed to 2000 = 100
+* FIGURE 2: Certificate vs degree growth, indexed to 2000 = 100
 *===============================================================================
 preserve
 collapse (sum) ctotalt, by(year is_certificate)
 
-* Get 2000 baseline for each series
 sort is_certificate year
 by is_certificate: gen base = ctotalt[1]
 gen index = (ctotalt / base) * 100
@@ -91,7 +167,7 @@ graph export "$figs\f2_cert_vs_degree_index.png", replace width(1600)
 restore
 
 *===============================================================================
-* Figure 3: Certificate share of total awards over time
+* FIGURE 3: Certificate share of total awards over time
 *===============================================================================
 preserve
 collapse (sum) ctotalt, by(year is_certificate)
@@ -112,20 +188,7 @@ graph export "$figs\f3_cert_share.png", replace width(1600)
 restore
 
 *===============================================================================
-* Table 2: Certificates by institution type (CONTROL x ICLEVEL), selected years
-*===============================================================================
-preserve
-keep if is_certificate == 1
-keep if inlist(year, 2000, 2010, 2019, 2024)
-keep if inlist(control, 1, 2, 3)   // drop -3 "not applicable"
-keep if inlist(iclevel, 1, 2, 3)   // drop -3 "not applicable"
-
-collapse (sum) ctotalt, by(year control iclevel)
-export delimited using "$tables\t2_certs_by_institution_type.csv", replace
-restore
-
-*===============================================================================
-* Figure 4: Certificate totals by institution CONTROL over time
+* FIGURE 4: Certificate awards by institution CONTROL, 2000-2024
 *===============================================================================
 preserve
 keep if is_certificate == 1
@@ -151,40 +214,46 @@ graph export "$figs\f4_certs_by_control.png", replace width(1600)
 restore
 
 *===============================================================================
-* Table 3: Top 10 CIP fields for certificates, 2000 vs 2024
+* FIGURE 5: Under-1-year certificates by length, 2020-2024
 *===============================================================================
 preserve
-keep if is_certificate == 1
-keep if inlist(year, 2000, 2024)
+keep if inlist(awlevel, 20, 21)
+keep if year >= 2020
 
-collapse (sum) ctotalt, by(year cip2)
+collapse (sum) ctotalt, by(year awlevel)
+reshape wide ctotalt, i(year) j(awlevel)
 
-* Rank within each year
-bysort year (ctotalt): gen rank = _N - _n + 1
-keep if rank <= 10
+twoway ///
+    (line ctotalt20 year, lcolor(navy) lwidth(medthick)) ///
+    (line ctotalt21 year, lcolor(maroon) lwidth(medthick)), ///
+    ytitle("Certificates awarded") ///
+    xtitle("Year") ///
+    xlabel(2020(1)2024) ///
+    ylabel(, format(%9.0fc)) ///
+    title("Under-1-year certificates by length, 2020-2024") ///
+    legend(order(1 "Under 12 weeks" 2 "12 weeks to 1 year") ///
+           position(6) rows(1)) ///
+    graphregion(color(white))
 
-sort year rank
-export delimited using "$tables\t3_top_cip_certs.csv", replace
+graph export "$figs\f5_under1yr_by_length.png", replace width(1600)
 restore
 
 *===============================================================================
-* Summary numbers for the memo
+* Summary output
 *===============================================================================
-display _newline "########## Headline numbers ##########"
-
-* Total certificates in first and last year
-sum ctotalt if year == 2000 & is_certificate == 1
-sum ctotalt if year == 2024 & is_certificate == 1
-
-* Bachelor's growth
-sum ctotalt if year == 2000 & award_category == "bachelor"
-sum ctotalt if year == 2024 & award_category == "bachelor"
-
-* Certificate share of awards
-tabstat ctotalt if year == 2000, by(is_certificate) statistics(sum)
-tabstat ctotalt if year == 2024, by(is_certificate) statistics(sum)
-
-display _newline "########## Descriptives complete ##########"
+display _newline "########## Descriptive package complete ##########"
+display "Tables in $tables:"
+display "  t1_totals_by_year_category.csv"
+display "  t2_under1yr_by_length.csv"
+display "  t3_certs_by_institution_type.csv"
+display "  t4_ug_cert_cip_top15.csv"
+display "  t5_cip_stability.csv"
+display _newline "Figures in $figs:"
+display "  f1_certs_by_type.png"
+display "  f2_cert_vs_degree_index.png"
+display "  f3_cert_share.png"
+display "  f4_certs_by_control.png"
+display "  f5_under1yr_by_length.png"
 
 
 
