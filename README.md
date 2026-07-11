@@ -31,7 +31,7 @@ certificate_trends/
 4. Run `code/02_build_panel.do` to build the harmonized panel
 5. Run `code/03_descriptives.do` to produce the tables and figures
 
-The final panel matches published NCES Digest of Education Statistics totals within 2% for every year.
+
 
 
 
