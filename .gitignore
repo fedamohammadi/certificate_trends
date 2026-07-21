@@ -16,3 +16,6 @@ Thumbs.db
 data/clean/*.dta
 data/clean/by_year/*.dta
 data/raw/ipeds/*.csvRproj.usre/
+
+# Raw Scorecard data (too large for git)
+data/raw/scorecard/
