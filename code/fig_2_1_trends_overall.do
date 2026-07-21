@@ -11,24 +11,20 @@ clear all
 set more off
 cd "C:\Users\mohammadif\Documents\certificate_trends"
 
-*---------------------------------------------------------------
-* Load the panel
-*---------------------------------------------------------------
 use "data/clean/completions_panel_2000_2024.dta", clear
 keep if inrange(year, 2000, 2024)
 
 *===============================================================
-* FIGURE 1A: Count by credential by year (5 categories, all certs
-* grouped together).
+* FIGURE 1A: Count by credential by year
 *===============================================================
 
 preserve
     gen category = .
-    replace category = 1 if inlist(awlevel, 1, 2, 4, 6, 8, 20, 21)   // certificates
-    replace category = 2 if awlevel == 3                              // associate's
-    replace category = 3 if awlevel == 5                              // bachelor's
-    replace category = 4 if awlevel == 7                              // master's
-    replace category = 5 if inlist(awlevel, 9, 10, 17, 18, 19)        // doctorate
+    replace category = 1 if inlist(awlevel, 1, 2, 4, 6, 8, 20, 21)
+    replace category = 2 if awlevel == 3
+    replace category = 3 if awlevel == 5
+    replace category = 4 if awlevel == 7
+    replace category = 5 if inlist(awlevel, 9, 10, 17, 18, 19)
     drop if missing(category)
 
     label define cat 1 "Certificates" 2 "Associate's" 3 "Bachelor's" ///
@@ -43,16 +39,29 @@ preserve
     rename ctotalt4 mast
     rename ctotalt5 doct
 
+    * End-of-line labels (only in the last year)
+    gen lbl_certs = string(certs, "%9.0fc") if year == 2024
+    gen lbl_assoc = string(assoc, "%9.0fc") if year == 2024
+    gen lbl_bach  = string(bach,  "%9.0fc") if year == 2024
+    gen lbl_mast  = string(mast,  "%9.0fc") if year == 2024
+    gen lbl_doct  = string(doct,  "%9.0fc") if year == 2024
+
     twoway (line certs year, lwidth(medthick)) ///
            (line assoc year, lwidth(medthick)) ///
            (line bach  year, lwidth(medthick)) ///
            (line mast  year, lwidth(medthick)) ///
-           (line doct  year, lwidth(medthick)), ///
+           (line doct  year, lwidth(medthick)) ///
+           (scatter certs year, msymbol(none) mlabel(lbl_certs) mlabposition(3) mlabsize(vsmall)) ///
+           (scatter assoc year, msymbol(none) mlabel(lbl_assoc) mlabposition(3) mlabsize(vsmall)) ///
+           (scatter bach  year, msymbol(none) mlabel(lbl_bach)  mlabposition(3) mlabsize(vsmall)) ///
+           (scatter mast  year, msymbol(none) mlabel(lbl_mast)  mlabposition(3) mlabsize(vsmall)) ///
+           (scatter doct  year, msymbol(none) mlabel(lbl_doct)  mlabposition(3) mlabsize(vsmall)), ///
            title("Credentials awarded nationally by category, 2000-2024", ///
                  size(medsmall)) ///
            ytitle("Awards conferred") ///
            xtitle("Year") ///
            xlabel(2000(4)2024) ///
+           xscale(range(2000 2026)) ///
            ylabel(, format(%9.0fc) angle(horizontal)) ///
            legend(order(1 "Certificates" 2 "Associate's" 3 "Bachelor's" ///
                         4 "Master's" 5 "Doctorate") ///
@@ -64,7 +73,7 @@ preserve
 restore
 
 *===============================================================
-* FIGURE 1B: Credential share by year.
+* FIGURE 1B: Credential share by year
 *===============================================================
 
 preserve
@@ -92,16 +101,29 @@ preserve
     rename share4 s_mast
     rename share5 s_doct
 
+    * End-of-line labels (percent, 1 decimal)
+    gen lbl_certs = string(s_certs, "%4.1f") + "%" if year == 2024
+    gen lbl_assoc = string(s_assoc, "%4.1f") + "%" if year == 2024
+    gen lbl_bach  = string(s_bach,  "%4.1f") + "%" if year == 2024
+    gen lbl_mast  = string(s_mast,  "%4.1f") + "%" if year == 2024
+    gen lbl_doct  = string(s_doct,  "%4.1f") + "%" if year == 2024
+
     twoway (line s_certs year, lwidth(medthick)) ///
            (line s_assoc year, lwidth(medthick)) ///
            (line s_bach  year, lwidth(medthick)) ///
            (line s_mast  year, lwidth(medthick)) ///
-           (line s_doct  year, lwidth(medthick)), ///
+           (line s_doct  year, lwidth(medthick)) ///
+           (scatter s_certs year, msymbol(none) mlabel(lbl_certs) mlabposition(3) mlabsize(vsmall)) ///
+           (scatter s_assoc year, msymbol(none) mlabel(lbl_assoc) mlabposition(3) mlabsize(vsmall)) ///
+           (scatter s_bach  year, msymbol(none) mlabel(lbl_bach)  mlabposition(3) mlabsize(vsmall)) ///
+           (scatter s_mast  year, msymbol(none) mlabel(lbl_mast)  mlabposition(3) mlabsize(vsmall)) ///
+           (scatter s_doct  year, msymbol(none) mlabel(lbl_doct)  mlabposition(3) mlabsize(vsmall)), ///
            title("Share of all credentials awarded by category, 2000-2024", ///
                  size(medsmall)) ///
            ytitle("Share of all awards (%)") ///
            xtitle("Year") ///
            xlabel(2000(4)2024) ///
+           xscale(range(2000 2026)) ///
            ylabel(0(10)50, angle(horizontal)) ///
            legend(order(1 "Certificates" 2 "Associate's" 3 "Bachelor's" ///
                         4 "Master's" 5 "Doctorate") ///
@@ -113,7 +135,7 @@ preserve
 restore
 
 *===============================================================
-* FIGURE 1C: Certificate counts by type and undergrad vs grad.
+* FIGURE 1C: Certificate counts by type and undergrad vs grad
 *===============================================================
 
 preserve
@@ -140,16 +162,28 @@ preserve
     rename ctotalt4 postbacc
     rename ctotalt5 postmast
 
+    gen lbl_under1   = string(ug_under1, "%9.0fc") if year == 2024
+    gen lbl_1to2     = string(ug_1to2,   "%9.0fc") if year == 2024
+    gen lbl_2to4     = string(ug_2to4,   "%9.0fc") if year == 2024
+    gen lbl_postbacc = string(postbacc,  "%9.0fc") if year == 2024
+    gen lbl_postmast = string(postmast,  "%9.0fc") if year == 2024
+
     twoway (line ug_under1 year, lwidth(medthick)) ///
            (line ug_1to2   year, lwidth(medthick)) ///
            (line ug_2to4   year, lwidth(medthick)) ///
            (line postbacc  year, lwidth(medthick)) ///
-           (line postmast  year, lwidth(medthick)), ///
+           (line postmast  year, lwidth(medthick)) ///
+           (scatter ug_under1 year, msymbol(none) mlabel(lbl_under1)   mlabposition(3) mlabsize(vsmall)) ///
+           (scatter ug_1to2   year, msymbol(none) mlabel(lbl_1to2)     mlabposition(3) mlabsize(vsmall)) ///
+           (scatter ug_2to4   year, msymbol(none) mlabel(lbl_2to4)     mlabposition(3) mlabsize(vsmall)) ///
+           (scatter postbacc  year, msymbol(none) mlabel(lbl_postbacc) mlabposition(3) mlabsize(vsmall)) ///
+           (scatter postmast  year, msymbol(none) mlabel(lbl_postmast) mlabposition(3) mlabsize(vsmall)), ///
            title("Certificates awarded by type, undergraduate and graduate, 2000-2024", ///
                  size(medsmall)) ///
            ytitle("Certificates conferred") ///
            xtitle("Year") ///
            xlabel(2000(4)2024) ///
+           xscale(range(2000 2026)) ///
            ylabel(, format(%9.0fc) angle(horizontal)) ///
            legend(order(1 "Undergrad: under 1 yr" ///
                         2 "Undergrad: 1 to 2 yr" ///
