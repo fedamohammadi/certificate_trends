@@ -92,17 +92,13 @@ gsort -share
 gen rk = _n
 keep if rk <= 15
 
-* Shorter label - just name and percentage, no count
-gen tm_label = cip_name + " " + string(share, "%3.1f") + "%"
-
 * Shorten a few long field names for readability
-replace tm_label = "Family/consumer sci " + string(share, "%3.1f") + "%" if cip_name == "Family & consumer sci"
-replace tm_label = "Homeland sec " + string(share, "%3.1f") + "%" if cip_name == "Homeland sec/protective"
-replace tm_label = "Visual/perf arts " + string(share, "%3.1f") + "%" if cip_name == "Visual & performing arts"
+replace cip_name = "Family/consumer sci" if cip_name == "Family & consumer sci"
+replace cip_name = "Homeland sec"        if cip_name == "Homeland sec/protective"
+replace cip_name = "Visual/perf arts"    if cip_name == "Visual & performing arts"
 
-treemap ctotalt, by(tm_label) ///
-    format(%9.0fc) ///
-    title("Undergraduate certificates by 2-digit field, 2024", size(medsmall)) ///
+treemap share, by(cip_name) ///
+    format(%3.0f) ///
     labsize(1.2) ///
     graphregion(color(white))
 
@@ -212,12 +208,10 @@ twoway (area cum9 year, color(gs14)) ///
        (area cum3 year) ///
        (area cum2 year) ///
        (area cum1 year), ///
-       title("Field composition of undergraduate certificates, 2000-2024", ///
-             size(medsmall)) ///
-       ytitle("Share of undergrad certs (%)") ///
-       xtitle("Year") ///
-       xlabel(2000(4)2024) ///
-       ylabel(0(20)100, angle(horizontal)) ///
+       ytitle("Share of undergrad certs (%)", size(small)) ///
+       xtitle("Year", size(small)) ///
+       xlabel(2000(4)2024, labsize(small)) ///
+       ylabel(0(20)100, angle(horizontal) labsize(small)) ///
        legend(order(1 "Other" ///
                     2 "`name_8'" ///
                     3 "`name_7'" ///
@@ -227,11 +221,11 @@ twoway (area cum9 year, color(gs14)) ///
                     7 "`name_3'" ///
                     8 "`name_2'" ///
                     9 "`name_1'") ///
-              cols(3) position(6) size(vsmall)) ///
-       graphregion(color(white)) plotregion(color(white))
+              cols(3) position(6) size(vsmall) region(lstyle(none))) ///
+       graphregion(color(white)) plotregion(color(white)) ///
+       xsize(7) ysize(4.2)
 
 graph export "output/figures/fig_5B_field_composition_over_time.png", ///
-    replace width(1600)
+    replace width(2100)
 
 display _newline "=== Section 2.5 figures done ==="
-

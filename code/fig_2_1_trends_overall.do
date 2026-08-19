@@ -17,7 +17,6 @@ keep if inrange(year, 2000, 2024)
 *===============================================================
 * FIGURE 1A: Count by credential by year
 *===============================================================
-
 preserve
     gen category = .
     replace category = 1 if inlist(awlevel, 1, 2, 4, 6, 8, 20, 21)
@@ -26,11 +25,9 @@ preserve
     replace category = 4 if awlevel == 7
     replace category = 5 if inlist(awlevel, 9, 10, 17, 18, 19)
     drop if missing(category)
-
     label define cat 1 "Certificates" 2 "Associate's" 3 "Bachelor's" ///
                      4 "Master's" 5 "Doctorate"
     label values category cat
-
     collapse (sum) ctotalt, by(year category)
     reshape wide ctotalt, i(year) j(category)
     rename ctotalt1 certs
@@ -38,38 +35,34 @@ preserve
     rename ctotalt3 bach
     rename ctotalt4 mast
     rename ctotalt5 doct
-
     * End-of-line labels (only in the last year)
     gen lbl_certs = string(certs, "%9.0fc") if year == 2024
     gen lbl_assoc = string(assoc, "%9.0fc") if year == 2024
     gen lbl_bach  = string(bach,  "%9.0fc") if year == 2024
     gen lbl_mast  = string(mast,  "%9.0fc") if year == 2024
     gen lbl_doct  = string(doct,  "%9.0fc") if year == 2024
-
-    twoway (line certs year, lwidth(medthick)) ///
-           (line assoc year, lwidth(medthick)) ///
-           (line bach  year, lwidth(medthick)) ///
-           (line mast  year, lwidth(medthick)) ///
-           (line doct  year, lwidth(medthick)) ///
-           (scatter certs year, msymbol(none) mlabel(lbl_certs) mlabposition(3) mlabsize(vsmall)) ///
-           (scatter assoc year, msymbol(none) mlabel(lbl_assoc) mlabposition(3) mlabsize(vsmall)) ///
-           (scatter bach  year, msymbol(none) mlabel(lbl_bach)  mlabposition(3) mlabsize(vsmall)) ///
-           (scatter mast  year, msymbol(none) mlabel(lbl_mast)  mlabposition(3) mlabsize(vsmall)) ///
-           (scatter doct  year, msymbol(none) mlabel(lbl_doct)  mlabposition(3) mlabsize(vsmall)), ///
-           title("Credentials awarded nationally by category, 2000-2024", ///
-                 size(medsmall)) ///
-           ytitle("Awards conferred") ///
-           xtitle("Year") ///
-           xlabel(2000(4)2024) ///
-           xscale(range(2000 2026)) ///
-           ylabel(, format(%9.0fc) angle(horizontal)) ///
+    twoway (line certs year, lwidth(medthick) lcolor("31 119 180")) ///
+           (line assoc year, lwidth(medthick) lcolor("214 39 40")) ///
+           (line bach  year, lwidth(medthick) lcolor("44 160 44")) ///
+           (line mast  year, lwidth(medthick) lcolor("255 127 14")) ///
+           (line doct  year, lwidth(medthick) lcolor("148 103 189")) ///
+           (scatter certs year, msymbol(none) mlabel(lbl_certs) mlabposition(3) mlabsize(vsmall) mlabcolor("31 119 180")) ///
+           (scatter assoc year, msymbol(none) mlabel(lbl_assoc) mlabposition(2) mlabsize(vsmall) mlabcolor("214 39 40")) ///
+           (scatter bach  year, msymbol(none) mlabel(lbl_bach)  mlabposition(3) mlabsize(vsmall) mlabcolor("44 160 44")) ///
+           (scatter mast  year, msymbol(none) mlabel(lbl_mast)  mlabposition(4) mlabsize(vsmall) mlabcolor("255 127 14")) ///
+           (scatter doct  year, msymbol(none) mlabel(lbl_doct)  mlabposition(3) mlabsize(vsmall) mlabcolor("148 103 189")), ///
+           ytitle("Awards conferred", size(small)) ///
+           xtitle("Year", size(small)) ///
+           xlabel(2000(4)2024, labsize(small)) ///
+           xscale(range(2000 2027)) ///
+           ylabel(, format(%9.0fc) angle(horizontal) labsize(small)) ///
            legend(order(1 "Certificates" 2 "Associate's" 3 "Bachelor's" ///
                         4 "Master's" 5 "Doctorate") ///
-                  rows(1) position(6) size(small)) ///
-           graphregion(color(white)) plotregion(color(white))
-
+                  rows(1) position(6) size(small) region(lstyle(none))) ///
+           graphregion(color(white)) plotregion(color(white)) ///
+           xsize(7) ysize(4.2)
     graph export "output/figures/fig_1A_count_by_credential_by_year.png", ///
-        replace width(1600)
+        replace width(2100)
 restore
 
 *===============================================================
@@ -137,7 +130,6 @@ restore
 *===============================================================
 * FIGURE 1C: Certificate counts by type and undergrad vs grad
 *===============================================================
-
 preserve
     gen cert_type = .
     replace cert_type = 1 if inlist(awlevel, 1, 20, 21)
@@ -146,14 +138,12 @@ preserve
     replace cert_type = 4 if awlevel == 6
     replace cert_type = 5 if awlevel == 8
     drop if missing(cert_type)
-
     label define ctype 1 "Undergrad: under 1 yr" ///
                       2 "Undergrad: 1 to 2 yr" ///
                       3 "Undergrad: 2 to 4 yr" ///
                       4 "Postbaccalaureate" ///
                       5 "Post-master's"
     label values cert_type ctype
-
     collapse (sum) ctotalt, by(year cert_type)
     reshape wide ctotalt, i(year) j(cert_type)
     rename ctotalt1 ug_under1
@@ -161,43 +151,35 @@ preserve
     rename ctotalt3 ug_2to4
     rename ctotalt4 postbacc
     rename ctotalt5 postmast
-
     gen lbl_under1   = string(ug_under1, "%9.0fc") if year == 2024
     gen lbl_1to2     = string(ug_1to2,   "%9.0fc") if year == 2024
     gen lbl_2to4     = string(ug_2to4,   "%9.0fc") if year == 2024
     gen lbl_postbacc = string(postbacc,  "%9.0fc") if year == 2024
     gen lbl_postmast = string(postmast,  "%9.0fc") if year == 2024
-
-    twoway (line ug_under1 year, lwidth(medthick)) ///
-           (line ug_1to2   year, lwidth(medthick)) ///
-           (line ug_2to4   year, lwidth(medthick)) ///
-           (line postbacc  year, lwidth(medthick)) ///
-           (line postmast  year, lwidth(medthick)) ///
-           (scatter ug_under1 year, msymbol(none) mlabel(lbl_under1)   mlabposition(3) mlabsize(vsmall)) ///
-           (scatter ug_1to2   year, msymbol(none) mlabel(lbl_1to2)     mlabposition(3) mlabsize(vsmall)) ///
-           (scatter ug_2to4   year, msymbol(none) mlabel(lbl_2to4)     mlabposition(3) mlabsize(vsmall)) ///
-           (scatter postbacc  year, msymbol(none) mlabel(lbl_postbacc) mlabposition(3) mlabsize(vsmall)) ///
-           (scatter postmast  year, msymbol(none) mlabel(lbl_postmast) mlabposition(3) mlabsize(vsmall)), ///
-           title("Certificates awarded by type, undergraduate and graduate, 2000-2024", ///
-                 size(medsmall)) ///
-           ytitle("Certificates conferred") ///
-           xtitle("Year") ///
-           xlabel(2000(4)2024) ///
-           xscale(range(2000 2026)) ///
-           ylabel(, format(%9.0fc) angle(horizontal)) ///
+    twoway (line ug_under1 year, lwidth(medthick) lcolor("31 119 180")) ///
+           (line ug_1to2   year, lwidth(medthick) lcolor("214 39 40")) ///
+           (line ug_2to4   year, lwidth(medthick) lcolor("44 160 44")) ///
+           (line postbacc  year, lwidth(medthick) lcolor("255 127 14")) ///
+           (line postmast  year, lwidth(medthick) lcolor("148 103 189")) ///
+           (scatter ug_under1 year, msymbol(none) mlabel(lbl_under1)   mlabposition(3) mlabsize(vsmall) mlabcolor("31 119 180")) ///
+           (scatter ug_1to2   year, msymbol(none) mlabel(lbl_1to2)     mlabposition(3) mlabsize(vsmall) mlabcolor("214 39 40")) ///
+           (scatter ug_2to4   year, msymbol(none) mlabel(lbl_2to4)     mlabposition(4) mlabsize(vsmall) mlabcolor("44 160 44")) ///
+           (scatter postbacc  year, msymbol(none) mlabel(lbl_postbacc) mlabposition(2) mlabsize(vsmall) mlabcolor("255 127 14")) ///
+           (scatter postmast  year, msymbol(none) mlabel(lbl_postmast) mlabposition(3) mlabsize(vsmall) mlabcolor("148 103 189")), ///
+           ytitle("Certificates conferred", size(small)) ///
+           xtitle("Year", size(small)) ///
+           xlabel(2000(4)2024, labsize(small)) ///
+           xscale(range(2000 2027)) ///
+           ylabel(, format(%9.0fc) angle(horizontal) labsize(small)) ///
            legend(order(1 "Undergrad: under 1 yr" ///
                         2 "Undergrad: 1 to 2 yr" ///
                         3 "Undergrad: 2 to 4 yr" ///
                         4 "Postbaccalaureate" ///
                         5 "Post-master's") ///
-                  rows(2) position(6) size(small)) ///
-           graphregion(color(white)) plotregion(color(white))
-
+                  rows(2) position(6) size(small) region(lstyle(none))) ///
+           graphregion(color(white)) plotregion(color(white)) ///
+           xsize(7) ysize(4.2)
     graph export "output/figures/fig_1C_certificate_count_by_type.png", ///
-        replace width(1600)
+        replace width(2100)
 restore
-
 display _newline "=== Section 2.1 figures done ==="
-
-
-
