@@ -17,12 +17,6 @@ cd "C:\Users\mohammadif\Documents\certificate_trends"
     replace
 
 *---------------------------------------------------------------
-* CIP 2-digit labels (major categories)
-*---------------------------------------------------------------
-* We only need labels for fields that appear in our top lists.
-* Full CIP 2-digit codes are well-documented in the IPEDS dictionary.
-
-*---------------------------------------------------------------
 * Base: undergraduate certificates only, by year and cip2
 *---------------------------------------------------------------
 use "data/clean/completions_panel_2000_2024.dta", clear
@@ -72,17 +66,13 @@ replace cip_name = "History" if cip2 == "54"
 
 replace cip_name = "Other" if missing(cip_name) | cip_name == ""
 
-* If cip_name still doesn't cover something, keep it grouped
-* This shouldn't happen for the main fields but is a safety net
-
-tempfile field_panel
-save `field_panel'
+save "data/clean/field_panel.dta", replace
 
 *===============================================================
 * FIGURE 5A (treemap): Top fields, 2024
 *===============================================================
 
-use `field_panel', clear
+use "data/clean/field_panel.dta", clear
 keep if year == 2024
 
 egen total_2024 = total(ctotalt)
@@ -92,24 +82,29 @@ gsort -share
 gen rk = _n
 keep if rk <= 15
 
-* Shorten a few long field names for readability
-replace cip_name = "Family/consumer sci" if cip_name == "Family & consumer sci"
-replace cip_name = "Homeland sec"        if cip_name == "Homeland sec/protective"
-replace cip_name = "Visual/perf arts"    if cip_name == "Visual & performing arts"
+* Full field names, wrapped to fit inside the boxes
+replace cip_name = "Homeland security"        if cip_name == "Homeland sec/protective"
+replace cip_name = "Engineering tech"         if cip_name == "Engineering tech"
+replace cip_name = "Family & consumer sci"    if cip_name == "Family & consumer sci"
+replace cip_name = "Visual & perf arts" if cip_name == "Visual & performing arts"
 
-treemap share, by(cip_name) ///
-    format(%3.0f) ///
-    labsize(1.2) ///
+* Build the label ourselves so we can add the percent sign
+gen tm_label = cip_name + " " + string(share, "%3.0f") + "%"
+
+treemap share, by(tm_label) ///
+    novalues ///
+    wrap(10) ///
+    labsize(2.3) ///
     graphregion(color(white))
 
 graph export "output/figures/fig_5A_treemap_field_share_2024.png", ///
-    replace width(1800) height(1200)
-
+    replace width(2400) height(1600)
+	
 *===============================================================
 * FIGURE 5A (bar chart): Top fields, 2024
 *===============================================================
 
-use `field_panel', clear
+use "data/clean/field_panel.dta", clear
 keep if year == 2024
 
 egen total_2024 = total(ctotalt)
@@ -125,21 +120,20 @@ gen lbl = string(share, "%3.1f") + "%"
 
 graph hbar (asis) share, over(cip_name, sort(order) label(labsize(small))) ///
     blabel(bar, format(%3.1f) size(vsmall)) ///
-    title("Undergraduate certificate share by 2-digit field, 2024", size(medsmall)) ///
-    ytitle("Share of undergraduate certificates (%)") ///
-    ylabel(0(5)25, angle(horizontal)) ///
+    ytitle("Share of undergraduate certificates (%)", size(small)) ///
+    ylabel(0(5)25, angle(horizontal) labsize(small)) ///
     graphregion(color(white)) plotregion(color(white)) ///
     ysize(7) xsize(9)
 
 graph export "output/figures/fig_5A_barchart_field_share_2024.png", ///
-    replace width(1600)
+    replace width(2100)
 
 *===============================================================
 * FIGURE 5B: Stacked area chart of top 8 field shares over time
 *===============================================================
 
 * Identify top 8 fields by 2024 share, with rank
-use `field_panel', clear
+use "data/clean/field_panel.dta", clear
 preserve
     keep if year == 2024
     egen total_2024 = total(ctotalt)
@@ -229,3 +223,6 @@ graph export "output/figures/fig_5B_field_composition_over_time.png", ///
     replace width(2100)
 
 display _newline "=== Section 2.5 figures done ==="
+
+
+
