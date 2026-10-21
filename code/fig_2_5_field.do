@@ -9,6 +9,7 @@
 clear all
 set more off
 cd "C:\Users\mohammadif\Documents\certificate_trends"
+capture mkdir "output/editable_figs"
 
 * One-time treemap install (run once, then comment out):
 *capture which treemap
@@ -99,6 +100,8 @@ treemap share, by(tm_label) ///
 
 graph export "output/figures/fig_5A_treemap_field_share_2024.png", ///
     replace width(2400) height(1600)
+graph export "output/editable_figs/fig_5A_treemap_field_share_2024.emf", replace
+graph export "output/editable_figs/fig_5A_treemap_field_share_2024.pdf", replace
 	
 *===============================================================
 * FIGURE 5A (bar chart): Top fields, 2024
@@ -127,6 +130,8 @@ graph hbar (asis) share, over(cip_name, sort(order) label(labsize(small))) ///
 
 graph export "output/figures/fig_5A_barchart_field_share_2024.png", ///
     replace width(2100)
+graph export "output/editable_figs/fig_5A_barchart_field_share_2024.emf", replace
+graph export "output/editable_figs/fig_5A_barchart_field_share_2024.pdf", replace
 
 *===============================================================
 * FIGURE 5B: Stacked area chart of top 8 field shares over time
@@ -221,6 +226,8 @@ twoway (area cum9 year, color(gs14)) ///
 
 graph export "output/figures/fig_5B_field_composition_over_time.png", ///
     replace width(2100)
+graph export "output/editable_figs/fig_5B_field_composition_over_time.emf", replace
+graph export "output/editable_figs/fig_5B_field_composition_over_time.pdf", replace
 
 display _newline "=== Section 2.5 figures done ==="
 

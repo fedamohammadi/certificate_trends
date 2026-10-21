@@ -6,6 +6,7 @@
 clear all
 set more off
 cd "C:\Users\mohammadif\Documents\certificate_trends"
+capture mkdir "output/editable_figs"
 use "data/clean/completions_panel_2000_2024.dta", clear
 keep if inlist(awlevel, 20, 21)
 keep if inrange(year, 2020, 2024)
@@ -40,4 +41,8 @@ twoway (line under12wk   year, lwidth(medthick) lcolor("31 119 180")) ///
        xsize(7) ysize(4.2)
 graph export "output/figures/fig_2_under_1yr_by_length.png", ///
     replace width(2100)
+graph export "output/editable_figs/fig_2_under_1yr_by_length.emf", replace
+graph export "output/editable_figs/fig_2_under_1yr_by_length.pdf", replace
 display _newline "=== Section 2.2 figure done ==="
+
+

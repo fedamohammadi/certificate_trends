@@ -9,6 +9,7 @@
 clear all
 set more off
 cd "C:\Users\mohammadif\Documents\certificate_trends"
+capture mkdir "output/editable_figs"
 
 capture which spmap
 if _rc ssc install spmap
@@ -107,6 +108,8 @@ spmap ratio using "data/clean/us_state_coord_albers.dta", id(id) ///
 
 graph export "output/figures/fig_4A_state_cert_assoc_ratio_2024.png", ///
     replace width(2100)
+graph export "output/editable_figs/fig_4A_state_cert_assoc_ratio_2024.emf", replace
+graph export "output/editable_figs/fig_4A_state_cert_assoc_ratio_2024.pdf", replace
 
 *===============================================================
 * FIGURE 4B: 50-state trends with highlights
@@ -177,6 +180,8 @@ twoway `gray_cmd' ///
 
 graph export "output/figures/fig_4B_state_ratio_trends.png", ///
     replace width(2100)
+graph export "output/editable_figs/fig_4B_state_ratio_trends.emf", replace
+graph export "output/editable_figs/fig_4B_state_ratio_trends.pdf", replace
 
 *===============================================================
 * FIGURE 4C: Community colleges by locale
@@ -236,9 +241,10 @@ twoway (line city   year, lwidth(medthick) lcolor("31 119 180")) ///
 
 graph export "output/figures/fig_4C_cc_ratio_by_locale.png", ///
     replace width(2100)
+graph export "output/editable_figs/fig_4C_cc_ratio_by_locale.emf", replace
+graph export "output/editable_figs/fig_4C_cc_ratio_by_locale.pdf", replace
 
 display _newline "=== Section 2.4 figures done ==="
-
 
 
 
@@ -261,7 +267,6 @@ list stabbr ratio_all ratio_u1 in 1/8, noobs
 gsort ratio_all
 list stabbr ratio_all ratio_u1 in 1/6, noobs
 count
-
 
 
 
@@ -304,6 +309,8 @@ spmap ratio using "data/clean/us_state_coord_albers.dta", id(id) ///
 
 graph export "output/figures/fig_6B_state_cert_assoc_ratio_u1_2024.png", ///
     replace width(2100)
+graph export "output/editable_figs/fig_6B_state_cert_assoc_ratio_u1_2024.emf", replace
+graph export "output/editable_figs/fig_6B_state_cert_assoc_ratio_u1_2024.pdf", replace
 
 
 
@@ -377,6 +384,8 @@ twoway `gray_cmd' ///
 
 graph export "output/figures/fig_7B_state_ratio_trends_u1.png", ///
     replace width(2100)
+graph export "output/editable_figs/fig_7B_state_ratio_trends_u1.emf", replace
+graph export "output/editable_figs/fig_7B_state_ratio_trends_u1.pdf", replace
 
 
 	
@@ -437,4 +446,9 @@ twoway (line city   year, lwidth(medthick) lcolor("31 119 180")) ///
 
 graph export "output/figures/fig_8A_ratio_by_locale_all.png", ///
     replace width(2100)
+graph export "output/editable_figs/fig_8A_ratio_by_locale_all.emf", replace
+graph export "output/editable_figs/fig_8A_ratio_by_locale_all.pdf", replace
+
+
+
 

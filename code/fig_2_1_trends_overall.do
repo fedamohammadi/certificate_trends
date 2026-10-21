@@ -10,6 +10,7 @@
 clear all
 set more off
 cd "C:\Users\mohammadif\Documents\certificate_trends"
+capture mkdir "output/editable_figs"
 
 use "data/clean/completions_panel_2000_2024.dta", clear
 keep if inrange(year, 2000, 2024)
@@ -63,6 +64,8 @@ preserve
            xsize(7) ysize(4.2)
     graph export "output/figures/fig_1A_count_by_credential_by_year.png", ///
         replace width(2100)
+    graph export "output/editable_figs/fig_1A_count_by_credential_by_year.emf", replace
+    graph export "output/editable_figs/fig_1A_count_by_credential_by_year.pdf", replace
 restore
 
 *===============================================================
@@ -125,6 +128,8 @@ preserve
 
     graph export "output/figures/fig_1B_credential_share_by_year.png", ///
         replace width(1600)
+    graph export "output/editable_figs/fig_1B_credential_share_by_year.emf", replace
+    graph export "output/editable_figs/fig_1B_credential_share_by_year.pdf", replace
 restore
 
 *===============================================================
@@ -181,5 +186,10 @@ preserve
            xsize(7) ysize(4.2)
     graph export "output/figures/fig_1C_certificate_count_by_type.png", ///
         replace width(2100)
+    graph export "output/editable_figs/fig_1C_certificate_count_by_type.emf", replace
+    graph export "output/editable_figs/fig_1C_certificate_count_by_type.pdf", replace
 restore
 display _newline "=== Section 2.1 figures done ==="
+
+
+
